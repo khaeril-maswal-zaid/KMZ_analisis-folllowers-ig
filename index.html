@@ -1,348 +1,1042 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IG Unfollow Detector (Local & Secure)</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IG Relationship Analyzer — Local & Secure</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .card { transition: all 0.3s ease; }
-        .card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .list-container { max-height: 400px; overflow-y: auto; }
-        /* Scrollbar custom */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+      :root {
+        color-scheme: light;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(99, 102, 241, 0.12),
+            transparent 28%
+          ),
+          radial-gradient(
+            circle at top right,
+            rgba(236, 72, 153, 0.08),
+            transparent 24%
+          ),
+          #f8fafc;
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.88);
+        backdrop-filter: blur(18px);
+      }
+      .soft-shadow {
+        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.07);
+      }
+      .card-hover {
+        transition: 0.2s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.09);
+      }
+      .drop-active {
+        border-color: #6366f1 !important;
+        background: #eef2ff !important;
+      }
+      .list-scroll {
+        max-height: 440px;
+        overflow-y: auto;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
     </style>
-</head>
-<body class="text-gray-800">
+  </head>
+  <body class="text-slate-800">
+    <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+      <header
+        class="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
+      >
+        <div>
+          <div
+            class="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white px-3 py-1 text-xs font-semibold text-indigo-700 shadow-sm"
+          >
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            100% diproses lokal di browser
+          </div>
+          <h1
+            class="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl"
+          >
+            IG Relationship Analyzer
+          </h1>
+          <p
+            class="mt-2 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base"
+          >
+            Upload file JSON hasil ekspor Instagram. Aplikasi akan mengenali
+            jenis file, menjelaskan kegunaannya, dan menampilkan analisis relasi
+            akun secara otomatis.
+          </p>
+        </div>
+        <button
+          id="resetBtn"
+          type="button"
+          class="hidden rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+        >
+          Reset data
+        </button>
+      </header>
 
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <header class="text-center mb-10">
-            <h1 class="text-4xl font-bold text-indigo-600 mb-2">🕵️‍♂️ IG Unfollow Detector</h1>
-            <p class="text-gray-500">Analisis pengikut Instagram Anda secara aman. Data diproses di browser Anda.</p>
-        </header>
-
-        <div class="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
-            <div class="grid md:grid-cols-2 gap-6">
-                <div class="border-2 border-dashed border-indigo-200 rounded-lg p-6 text-center hover:bg-indigo-50 transition">
-                    <label class="block mb-2 font-semibold text-indigo-700">1. Upload following.json</label>
-                    <input type="file" id="followingFile" accept=".json" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 cursor-pointer">
-                    <p class="text-xs text-gray-400 mt-2">File ini berisi daftar orang yang Anda ikuti.</p>
-                </div>
-
-                <div class="border-2 border-dashed border-green-200 rounded-lg p-6 text-center hover:bg-green-50 transition">
-                    <label class="block mb-2 font-semibold text-green-700">2. Upload followers_*.json</label>
-                    <input type="file" id="followersFiles" accept=".json" multiple class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-100 file:text-green-700 hover:file:bg-green-200 cursor-pointer">
-                    <p class="text-xs text-gray-400 mt-2">Bisa pilih banyak file sekaligus (jika followers > 1 file).</p>
-                </div>
+      <section
+        class="glass soft-shadow mb-8 overflow-hidden rounded-3xl border border-white"
+      >
+        <div class="border-b border-slate-100 px-5 py-5 sm:px-7">
+          <div
+            class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">
+                Upload data Instagram
+              </h2>
+              <p class="mt-1 text-sm text-slate-500">
+                Pilih semua file sekaligus. Nama file akan dipakai untuk
+                identifikasi otomatis.
+              </p>
             </div>
-
-            <button onclick="processFiles()" class="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow transition transform active:scale-95">
-                🔍 Analisis Sekarang
-            </button>
-            <p id="statusMsg" class="text-center text-sm mt-3 text-red-500 font-semibold"></p>
+            <span
+              class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500"
+              >JSON only</span
+            >
+          </div>
         </div>
 
-        <div id="resultsArea" class="hidden">
-            
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div class="bg-white p-4 rounded-lg shadow text-center border-b-4 border-gray-400">
-                    <h3 class="text-gray-500 text-sm uppercase">Total Following</h3>
-                    <p class="text-2xl font-bold" id="statFollowing">0</p>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow text-center border-b-4 border-gray-400">
-                    <h3 class="text-gray-500 text-sm uppercase">Total Followers</h3>
-                    <p class="text-2xl font-bold" id="statFollowers">0</p>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow text-center border-b-4 border-red-500">
-                    <h3 class="text-red-500 text-sm uppercase font-bold">Not Follow Back</h3>
-                    <p class="text-2xl font-bold text-red-600" id="statNotBack">0</p>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow text-center border-b-4 border-green-500">
-                    <h3 class="text-green-500 text-sm uppercase font-bold">Mutual</h3>
-                    <p class="text-2xl font-bold text-green-600" id="statMutual">0</p>
-                </div>
+        <div class="p-5 sm:p-7">
+          <label
+            id="dropZone"
+            for="allFiles"
+            class="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/70 px-6 py-10 text-center transition hover:border-indigo-300 hover:bg-indigo-50/60"
+          >
+            <div
+              class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm ring-1 ring-slate-100"
+            >
+              📂
             </div>
+            <p class="text-base font-bold text-slate-800">
+              Tarik file ke sini atau klik untuk memilih
+            </p>
+            <p class="mt-1 text-sm text-slate-500">
+              Bisa upload followers_*.json, following.json, dan file relasi
+              lainnya sekaligus.
+            </p>
+            <input
+              id="allFiles"
+              class="hidden"
+              type="file"
+              accept=".json,application/json"
+              multiple
+            />
+          </label>
 
-            <div class="grid lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg flex flex-col items-center justify-center">
-                    <h3 class="font-bold text-lg mb-4 text-gray-700">Ringkasan Statistik</h3>
-                    <div class="w-full relative" style="height: 300px;">
-                        <canvas id="myChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="lg:col-span-2 bg-white rounded-xl shadow-lg overflow-hidden">
-                    <div class="flex border-b">
-                        <button onclick="switchTab('notBack')" id="tab-notBack" class="flex-1 py-4 text-center font-semibold text-red-600 border-b-2 border-red-600 bg-red-50">
-                            💔 Not Follow Back
-                        </button>
-                        <button onclick="switchTab('mutual')" id="tab-mutual" class="flex-1 py-4 text-center font-semibold text-gray-500 hover:text-green-600">
-                            🤝 Mutual
-                        </button>
-                        <button onclick="switchTab('fans')" id="tab-fans" class="flex-1 py-4 text-center font-semibold text-gray-500 hover:text-blue-600">
-                            🌟 Only Followers
-                        </button>
-                    </div>
-
-                    <div class="p-4">
-                        <div id="list-notBack" class="block">
-                            <input type="text" onkeyup="filterList('ul-notBack', this.value)" placeholder="Cari username..." class="w-full mb-3 p-2 border rounded text-sm bg-gray-50">
-                            <ul id="ul-notBack" class="list-container space-y-2"></ul>
-                        </div>
-
-                        <div id="list-mutual" class="hidden">
-                            <input type="text" onkeyup="filterList('ul-mutual', this.value)" placeholder="Cari username..." class="w-full mb-3 p-2 border rounded text-sm bg-gray-50">
-                            <ul id="ul-mutual" class="list-container space-y-2"></ul>
-                        </div>
-
-                        <div id="list-fans" class="hidden">
-                            <input type="text" onkeyup="filterList('ul-fans', this.value)" placeholder="Cari username..." class="w-full mb-3 p-2 border rounded text-sm bg-gray-50">
-                            <ul id="ul-fans" class="list-container space-y-2"></ul>
-                        </div>
-                    </div>
-                </div>
+          <div id="fileQueue" class="mt-5 hidden">
+            <div class="mb-3 flex items-center justify-between">
+              <h3 class="text-sm font-bold text-slate-700">File terdeteksi</h3>
+              <span
+                id="fileCount"
+                class="text-xs font-semibold text-slate-400"
+              ></span>
             </div>
+            <div
+              id="fileQueueGrid"
+              class="grid gap-3 md:grid-cols-2 xl:grid-cols-3"
+            ></div>
+          </div>
+
+          <div
+            id="statusBox"
+            class="mt-5 hidden rounded-2xl px-4 py-3 text-sm font-medium"
+          ></div>
         </div>
+      </section>
+
+      <section id="overviewArea" class="hidden space-y-8">
+        <div>
+          <div class="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <p
+                class="text-xs font-bold uppercase tracking-[0.18em] text-indigo-500"
+              >
+                Overview
+              </p>
+              <h2 class="mt-1 text-2xl font-bold text-slate-900">
+                Ringkasan akun
+              </h2>
+            </div>
+            <p
+              id="analyzedAt"
+              class="hidden text-xs text-slate-400 sm:block"
+            ></p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <article
+              class="card-hover rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <div class="flex items-center justify-between">
+                <span
+                  class="text-xs font-bold uppercase tracking-wide text-slate-400"
+                  >Following</span
+                ><span class="text-lg">👤</span>
+              </div>
+              <p
+                id="statFollowing"
+                class="mt-3 text-3xl font-extrabold text-slate-900"
+              >
+                —
+              </p>
+              <p class="mt-1 text-xs text-slate-400">Akun yang Anda ikuti</p>
+            </article>
+            <article
+              class="card-hover rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <div class="flex items-center justify-between">
+                <span
+                  class="text-xs font-bold uppercase tracking-wide text-slate-400"
+                  >Followers</span
+                ><span class="text-lg">👥</span>
+              </div>
+              <p
+                id="statFollowers"
+                class="mt-3 text-3xl font-extrabold text-slate-900"
+              >
+                —
+              </p>
+              <p class="mt-1 text-xs text-slate-400">
+                Akun yang mengikuti Anda
+              </p>
+            </article>
+            <article
+              class="card-hover rounded-2xl border border-rose-100 bg-white p-5 shadow-sm"
+            >
+              <div class="flex items-center justify-between">
+                <span
+                  class="text-xs font-bold uppercase tracking-wide text-rose-400"
+                  >Not follow back</span
+                ><span class="text-lg">↘️</span>
+              </div>
+              <p
+                id="statNotBack"
+                class="mt-3 text-3xl font-extrabold text-rose-600"
+              >
+                —
+              </p>
+              <p class="mt-1 text-xs text-slate-400">
+                Anda follow, mereka tidak follow balik
+              </p>
+            </article>
+            <article
+              class="card-hover rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm"
+            >
+              <div class="flex items-center justify-between">
+                <span
+                  class="text-xs font-bold uppercase tracking-wide text-emerald-500"
+                  >Mutual</span
+                ><span class="text-lg">🤝</span>
+              </div>
+              <p
+                id="statMutual"
+                class="mt-3 text-3xl font-extrabold text-emerald-600"
+              >
+                —
+              </p>
+              <p class="mt-1 text-xs text-slate-400">Saling mengikuti</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+          <article
+            class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+          >
+            <div class="mb-5">
+              <h3 class="font-bold text-slate-900">Komposisi relasi</h3>
+              <p class="mt-1 text-sm text-slate-500">
+                Perbandingan Not Follow Back, Mutual, dan Only Followers.
+              </p>
+            </div>
+            <div class="relative h-[290px]">
+              <canvas id="relationshipChart"></canvas>
+            </div>
+          </article>
+
+          <article
+            class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
+          >
+            <div
+              class="flex overflow-x-auto border-b border-slate-100 px-2 pt-2"
+            >
+              <button
+                data-rel-tab="notBack"
+                class="rel-tab whitespace-nowrap rounded-t-xl border-b-2 border-rose-500 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600"
+              >
+                Not Follow Back <span id="countNotBack" class="ml-1"></span>
+              </button>
+              <button
+                data-rel-tab="mutual"
+                class="rel-tab whitespace-nowrap rounded-t-xl border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-slate-500"
+              >
+                Mutual <span id="countMutual" class="ml-1"></span>
+              </button>
+              <button
+                data-rel-tab="fans"
+                class="rel-tab whitespace-nowrap rounded-t-xl border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-slate-500"
+              >
+                Only Followers <span id="countFans" class="ml-1"></span>
+              </button>
+            </div>
+            <div class="p-5">
+              <div
+                class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <h3 id="relTitle" class="font-bold text-slate-900">
+                    Not Follow Back
+                  </h3>
+                  <p id="relDesc" class="mt-1 text-sm text-slate-500">
+                    Akun yang Anda ikuti tetapi tidak mengikuti Anda kembali.
+                  </p>
+                </div>
+                <input
+                  id="relationshipSearch"
+                  type="search"
+                  placeholder="Cari username..."
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50 sm:w-64"
+                />
+              </div>
+              <div id="relationshipList" class="list-scroll space-y-2"></div>
+            </div>
+          </article>
+        </div>
+
+        <div>
+          <div class="mb-4">
+            <p
+              class="text-xs font-bold uppercase tracking-[0.18em] text-violet-500"
+            >
+              Data lainnya
+            </p>
+            <h2 class="mt-1 text-2xl font-bold text-slate-900">
+              Aktivitas & pengaturan relasi
+            </h2>
+            <p class="mt-1 max-w-3xl text-sm text-slate-500">
+              Setiap file memiliki tujuan berbeda. Klik kartu untuk melihat akun
+              di dalamnya.
+            </p>
+          </div>
+          <div
+            id="secondaryCards"
+            class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+          ></div>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="detailModal"
+      class="fixed inset-0 z-50 hidden items-end justify-center bg-slate-950/40 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+    >
+      <div
+        class="max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
+      >
+        <div
+          class="flex items-start justify-between border-b border-slate-100 p-5 sm:p-6"
+        >
+          <div>
+            <div
+              id="modalIcon"
+              class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-xl"
+            ></div>
+            <h3 id="modalTitle" class="text-xl font-bold text-slate-900"></h3>
+            <p
+              id="modalDescription"
+              class="mt-1 text-sm leading-6 text-slate-500"
+            ></p>
+          </div>
+          <button
+            id="closeModalBtn"
+            class="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Tutup"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="p-5 sm:p-6">
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <p id="modalCount" class="text-sm font-semibold text-slate-500"></p>
+            <input
+              id="modalSearch"
+              type="search"
+              placeholder="Cari username..."
+              class="w-52 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+            />
+          </div>
+          <div id="modalList" class="list-scroll space-y-2"></div>
+        </div>
+      </div>
     </div>
 
     <script>
-        let chartInstance = null;
+      let chartInstance = null;
+      let relationshipActiveTab = "notBack";
+      let modalDataset = [];
 
-        // Helper: Read File as Text
-        const readFile = (file) => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(JSON.parse(e.target.result));
-                reader.onerror = (e) => reject(e);
-                reader.readAsText(file);
-            });
-        };
+      const state = {
+        following: [],
+        followers: [],
+        notBack: [],
+        mutual: [],
+        fans: [],
+        secondary: {},
+      };
 
-        // Helper: Extract username safely
-        // Menggunakan value dari string_list_data sebagai primary, title sebagai fallback
-        const extractUsernames = (jsonArray) => {
-            const usernames = new Set();
-            
-            // Handle struktur 'relationships_following' (biasanya di following.json)
-            if (jsonArray.relationships_following) {
-                jsonArray = jsonArray.relationships_following;
-            }
+      const FILE_TYPES = {
+        following: {
+          label: "Following",
+          icon: "👤",
+          tone: "indigo",
+          description: "Daftar akun yang Anda ikuti.",
+          patterns: [/^following(?:\(\d+\))?\.json$/i],
+        },
+        followers: {
+          label: "Followers",
+          icon: "👥",
+          tone: "emerald",
+          description:
+            "Daftar akun yang mengikuti Anda. Bisa terdiri dari beberapa file followers_1, followers_2, dst.",
+          patterns: [/^followers(?:_\d+)?(?:\(\d+\))?\.json$/i],
+        },
+        pending_follow_requests: {
+          label: "Pending Follow Requests",
+          icon: "⏳",
+          tone: "amber",
+          description:
+            "Permintaan follow yang masih menunggu/pending pada saat data diekspor.",
+          patterns: [/^pending_follow_requests(?:\(\d+\))?\.json$/i],
+        },
+        recent_follow_requests: {
+          label: "Recent Follow Requests",
+          icon: "🕒",
+          tone: "sky",
+          description:
+            "Riwayat permintaan follow terbaru yang tercatat dalam ekspor.",
+          patterns: [/^recent_follow_requests(?:\(\d+\))?\.json$/i],
+        },
+        recently_unfollowed_profiles: {
+          label: "Recently Unfollowed",
+          icon: "↩️",
+          tone: "rose",
+          description: "Profil yang baru-baru ini Anda unfollow.",
+          patterns: [/^recently_unfollowed_profiles(?:\(\d+\))?\.json$/i],
+        },
+        hide_story_from: {
+          label: "Hidden From Story",
+          icon: "🙈",
+          tone: "violet",
+          description:
+            "Akun yang Anda atur agar tidak dapat melihat Story Anda.",
+          patterns: [/^hide_story_from(?:\(\d+\))?\.json$/i],
+        },
+        removed_suggestions: {
+          label: "Removed Suggestions",
+          icon: "🚫",
+          tone: "slate",
+          description:
+            "Akun rekomendasi yang pernah Anda hapus/dismiss dari suggestion.",
+          patterns: [/^removed_suggestions(?:\(\d+\))?\.json$/i],
+        },
+        approved_business_partners: {
+          label: "Approved Business Partners",
+          icon: "💼",
+          tone: "cyan",
+          description:
+            "Akun yang pernah disetujui sebagai partner bisnis/branded content.",
+          patterns: [/^approved_business_partners(?:\(\d+\))?\.json$/i],
+        },
+      };
 
-            // Normalisasi ke array jika root-nya bukan array
-            if (!Array.isArray(jsonArray)) {
-                // Jika formatnya { users: [...] } atau semacamnya, perlu penyesuaian.
-                // Untuk format IG standar saat ini, biasanya array langsung atau properti di atas.
-                return usernames; 
-            }
+      const toneClasses = {
+        indigo: ["bg-indigo-50", "text-indigo-700", "border-indigo-100"],
+        emerald: ["bg-emerald-50", "text-emerald-700", "border-emerald-100"],
+        amber: ["bg-amber-50", "text-amber-700", "border-amber-100"],
+        sky: ["bg-sky-50", "text-sky-700", "border-sky-100"],
+        rose: ["bg-rose-50", "text-rose-700", "border-rose-100"],
+        violet: ["bg-violet-50", "text-violet-700", "border-violet-100"],
+        slate: ["bg-slate-100", "text-slate-700", "border-slate-200"],
+        cyan: ["bg-cyan-50", "text-cyan-700", "border-cyan-100"],
+      };
 
-            jsonArray.forEach(item => {
-                let username = null;
-                
-                // Cara 1: Ambil dari string_list_data[0].value (Paling Akurat - ID Unik)
-                if (item.string_list_data && item.string_list_data.length > 0) {
-                    username = item.string_list_data[0].value;
-                }
-                
-                // Cara 2: Fallback ke title (Sesuai request, tapi title kadang berisi teks display)
-                if (!username && item.title) {
-                    username = item.title;
-                }
+      const allFiles = document.getElementById("allFiles");
+      const dropZone = document.getElementById("dropZone");
+      const resetBtn = document.getElementById("resetBtn");
 
-                if (username) {
-                    usernames.add(username);
-                }
-            });
-            return usernames;
-        };
-
-        async function processFiles() {
-            const followingInput = document.getElementById('followingFile');
-            const followersInput = document.getElementById('followersFiles');
-            const statusMsg = document.getElementById('statusMsg');
-
-            // Reset UI
-            statusMsg.textContent = "";
-            
-            if (followingInput.files.length === 0 || followersInput.files.length === 0) {
-                statusMsg.textContent = "❌ Harap upload kedua jenis file (following & followers).";
-                return;
-            }
-
+      const readFile = (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
             try {
-                // 1. Parse Following
-                const followingData = await readFile(followingInput.files[0]);
-                const followingSet = extractUsernames(followingData);
-
-                // 2. Parse Followers (Multiple Files)
-                const followersSet = new Set();
-                for (const file of followersInput.files) {
-                    const data = await readFile(file);
-                    const extracted = extractUsernames(data);
-                    extracted.forEach(u => followersSet.add(u));
-                }
-
-                if (followingSet.size === 0 || followersSet.size === 0) {
-                    statusMsg.textContent = "⚠️ Data kosong atau format JSON tidak dikenali. Pastikan file dari 'Download Your Information' Instagram.";
-                    return;
-                }
-
-                // 3. Logika Perbandingan
-                const mutual = [];
-                const notBack = [];
-                const fans = [];
-
-                // Cek Not Back & Mutual
-                followingSet.forEach(user => {
-                    if (followersSet.has(user)) {
-                        mutual.push(user);
-                    } else {
-                        notBack.push(user);
-                    }
-                });
-
-                // Cek Fans (Only Followers)
-                followersSet.forEach(user => {
-                    if (!followingSet.has(user)) {
-                        fans.push(user);
-                    }
-                });
-
-                // 4. Update UI
-                renderResults(followingSet.size, followersSet.size, notBack, mutual, fans);
-                
-            } catch (error) {
-                console.error(error);
-                statusMsg.textContent = "❌ Terjadi kesalahan saat membaca file JSON. Pastikan format file benar.";
+              resolve(JSON.parse(e.target.result));
+            } catch (err) {
+              reject(new Error(`${file.name}: JSON tidak valid`));
             }
+          };
+          reader.onerror = () =>
+            reject(new Error(`${file.name}: gagal dibaca`));
+          reader.readAsText(file);
+        });
+
+      function detectType(fileName) {
+        const name = fileName.toLowerCase();
+        for (const [key, config] of Object.entries(FILE_TYPES)) {
+          if (config.patterns.some((pattern) => pattern.test(name))) return key;
         }
+        return null;
+      }
 
-        function renderResults(totalFollowing, totalFollowers, notBackList, mutualList, fansList) {
-            document.getElementById('resultsArea').classList.remove('hidden');
+      function extractUsernameFromLabelValues(item) {
+        if (!Array.isArray(item?.label_values)) return null;
+        const usernameEntry = item.label_values.find(
+          (entry) =>
+            String(entry?.label || "")
+              .toLowerCase()
+              .includes("nama pengguna") ||
+            String(entry?.label || "")
+              .toLowerCase()
+              .includes("username"),
+        );
+        return usernameEntry?.value || null;
+      }
 
-            // Set Stats Text
-            document.getElementById('statFollowing').innerText = totalFollowing;
-            document.getElementById('statFollowers').innerText = totalFollowers;
-            document.getElementById('statNotBack').innerText = notBackList.length;
-            document.getElementById('statMutual').innerText = mutualList.length;
-
-            // Render Charts
-            renderChart(notBackList.length, mutualList.length, fansList.length);
-
-            // Populate Lists
-            populateList('ul-notBack', notBackList, 'text-red-600');
-            populateList('ul-mutual', mutualList, 'text-green-600');
-            populateList('ul-fans', fansList, 'text-blue-600');
-
-            // Scroll to results
-            document.getElementById('resultsArea').scrollIntoView({ behavior: 'smooth' });
+      function extractRecords(json, type) {
+        let rows = json;
+        if (type === "following" && json?.relationships_following)
+          rows = json.relationships_following;
+        // Beberapa file Instagram (mis. approved_business_partners) dapat berupa satu object tunggal.
+        if (
+          !Array.isArray(rows) &&
+          rows &&
+          typeof rows === "object" &&
+          (rows.label_values || rows.string_list_data || rows.title)
+        ) {
+          rows = [rows];
         }
+        if (!Array.isArray(rows)) return [];
 
-        function populateList(elementId, dataList, colorClass) {
-            const ul = document.getElementById(elementId);
-            ul.innerHTML = '';
-            
-            if (dataList.length === 0) {
-                ul.innerHTML = '<li class="p-2 text-gray-400 text-center text-sm">Tidak ada data</li>';
-                return;
-            }
+        const map = new Map();
+        rows.forEach((item) => {
+          let username = null;
+          let href = null;
+          let timestamp = item?.timestamp || null;
 
-            dataList.forEach(user => {
-                const li = document.createElement('li');
-                li.className = "flex justify-between items-center bg-gray-50 p-3 rounded border border-gray-100 hover:bg-white hover:shadow-sm transition";
-                li.innerHTML = `
-                    <span class="font-medium text-gray-700 select-all">${user}</span>
-                    <a href="https://instagram.com/${user}" target="_blank" class="text-xs font-bold ${colorClass} hover:underline">
-                        Lihat Profil ↗
-                    </a>
-                `;
-                ul.appendChild(li);
+          if (item?.string_list_data?.length) {
+            const first = item.string_list_data[0];
+            username = first?.value || item?.title || null;
+            href = first?.href || null;
+            timestamp = first?.timestamp || timestamp;
+          }
+
+          if (!username) username = extractUsernameFromLabelValues(item);
+          if (!username && item?.title) username = item.title;
+
+          if (Array.isArray(item?.label_values)) {
+            const urlEntry = item.label_values.find(
+              (entry) => String(entry?.label || "").toLowerCase() === "url",
+            );
+            href = href || urlEntry?.value || null;
+          }
+
+          if (username) {
+            map.set(String(username).trim(), {
+              username: String(username).trim(),
+              href:
+                href ||
+                `https://instagram.com/${encodeURIComponent(String(username).trim())}`,
+              timestamp,
             });
+          }
+        });
+        return [...map.values()];
+      }
+
+      function mergeRecords(target, incoming) {
+        const map = new Map(target.map((x) => [x.username.toLowerCase(), x]));
+        incoming.forEach((x) => map.set(x.username.toLowerCase(), x));
+        return [...map.values()];
+      }
+
+      function setStatus(message, mode = "info") {
+        const box = document.getElementById("statusBox");
+        box.classList.remove("hidden");
+        const styles = {
+          info: "bg-indigo-50 text-indigo-700 border border-indigo-100",
+          success: "bg-emerald-50 text-emerald-700 border border-emerald-100",
+          warning: "bg-amber-50 text-amber-800 border border-amber-100",
+          error: "bg-rose-50 text-rose-700 border border-rose-100",
+        };
+        box.className = `mt-5 rounded-2xl px-4 py-3 text-sm font-medium ${styles[mode]}`;
+        box.textContent = message;
+      }
+
+      async function processSelectedFiles(files) {
+        const selected = [...files];
+        if (!selected.length) return;
+
+        document.getElementById("fileQueue").classList.remove("hidden");
+        document.getElementById("fileCount").textContent =
+          `${selected.length} file`;
+        const grid = document.getElementById("fileQueueGrid");
+        grid.innerHTML = "";
+
+        const grouped = {};
+        const unknown = [];
+
+        selected.forEach((file) => {
+          const type = detectType(file.name);
+          if (!type) unknown.push(file);
+          else (grouped[type] ||= []).push(file);
+
+          const config = type ? FILE_TYPES[type] : null;
+          const tone = config
+            ? toneClasses[config.tone]
+            : ["bg-slate-50", "text-slate-500", "border-slate-200"];
+          const card = document.createElement("div");
+          card.className = `rounded-2xl border p-4 ${tone[2]} ${tone[0]}`;
+          card.innerHTML = `
+          <div class="flex items-start gap-3">
+            <div class="text-xl">${config?.icon || "❔"}</div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-bold ${tone[1]}" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</p>
+              <p class="mt-1 text-xs text-slate-500">${config ? config.label : "File belum dikenali"}</p>
+            </div>
+          </div>`;
+          grid.appendChild(card);
+        });
+
+        if (unknown.length) {
+          setStatus(
+            `${unknown.length} file belum dikenali dan akan diabaikan. File yang dikenali tetap diproses.`,
+            "warning",
+          );
+        } else {
+          setStatus("Membaca dan menganalisis file...", "info");
         }
 
-        function renderChart(notBackCount, mutualCount, fansCount) {
-            const ctx = document.getElementById('myChart').getContext('2d');
-            
-            if (chartInstance) {
-                chartInstance.destroy();
+        resetState();
+
+        try {
+          for (const [type, typeFiles] of Object.entries(grouped)) {
+            let merged = [];
+            for (const file of typeFiles) {
+              const json = await readFile(file);
+              merged = mergeRecords(merged, extractRecords(json, type));
             }
+            if (type === "following") state.following = merged;
+            else if (type === "followers") state.followers = merged;
+            else state.secondary[type] = merged;
+          }
 
-            chartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Not Follow Back', 'Mutual', 'Only Followers'],
-                    datasets: [{
-                        data: [notBackCount, mutualCount, fansCount],
-                        backgroundColor: [
-                            '#EF4444', // Red for Not Back
-                            '#10B981', // Green for Mutual
-                            '#3B82F6'  // Blue for Fans
-                        ],
-                        borderWidth: 2,
-                        hoverOffset: 10
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { usePointStyle: true, padding: 20 }
-                        }
-                    }
-                }
+          computeRelationshipAnalysis();
+          renderAll();
+          const recognizedCount = Object.values(grouped).flat().length;
+          setStatus(
+            `${recognizedCount} file berhasil dianalisis. Semua data tetap berada di browser Anda.`,
+            "success",
+          );
+        } catch (error) {
+          console.error(error);
+          setStatus(
+            error.message || "Terjadi kesalahan saat membaca file.",
+            "error",
+          );
+        }
+      }
+
+      function computeRelationshipAnalysis() {
+        const followingMap = new Map(
+          state.following.map((x) => [x.username.toLowerCase(), x]),
+        );
+        const followerMap = new Map(
+          state.followers.map((x) => [x.username.toLowerCase(), x]),
+        );
+
+        state.notBack = [];
+        state.mutual = [];
+        state.fans = [];
+
+        state.following.forEach((item) => {
+          if (followerMap.has(item.username.toLowerCase()))
+            state.mutual.push(item);
+          else state.notBack.push(item);
+        });
+        state.followers.forEach((item) => {
+          if (!followingMap.has(item.username.toLowerCase()))
+            state.fans.push(item);
+        });
+
+        [
+          state.following,
+          state.followers,
+          state.notBack,
+          state.mutual,
+          state.fans,
+        ].forEach((list) =>
+          list.sort((a, b) => a.username.localeCompare(b.username)),
+        );
+      }
+
+      function renderAll() {
+        document.getElementById("overviewArea").classList.remove("hidden");
+        resetBtn.classList.remove("hidden");
+        document.getElementById("analyzedAt").textContent =
+          `Dianalisis ${new Date().toLocaleString("id-ID")}`;
+
+        const hasCore = state.following.length || state.followers.length;
+        document.getElementById("statFollowing").textContent =
+          state.following.length || "—";
+        document.getElementById("statFollowers").textContent =
+          state.followers.length || "—";
+        document.getElementById("statNotBack").textContent = hasCore
+          ? state.notBack.length
+          : "—";
+        document.getElementById("statMutual").textContent = hasCore
+          ? state.mutual.length
+          : "—";
+        document.getElementById("countNotBack").textContent = hasCore
+          ? `(${state.notBack.length})`
+          : "";
+        document.getElementById("countMutual").textContent = hasCore
+          ? `(${state.mutual.length})`
+          : "";
+        document.getElementById("countFans").textContent = hasCore
+          ? `(${state.fans.length})`
+          : "";
+
+        renderChart();
+        renderRelationshipList();
+        renderSecondaryCards();
+        document
+          .getElementById("overviewArea")
+          .scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function renderChart() {
+        const ctx = document
+          .getElementById("relationshipChart")
+          .getContext("2d");
+        if (chartInstance) chartInstance.destroy();
+        const hasCore = state.following.length || state.followers.length;
+        chartInstance = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["Not Follow Back", "Mutual", "Only Followers"],
+            datasets: [
+              {
+                data: hasCore
+                  ? [
+                      state.notBack.length,
+                      state.mutual.length,
+                      state.fans.length,
+                    ]
+                  : [1],
+                backgroundColor: hasCore
+                  ? ["#f43f5e", "#10b981", "#3b82f6"]
+                  : ["#e2e8f0"],
+                borderWidth: 0,
+                hoverOffset: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "72%",
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: { usePointStyle: true, padding: 18, boxWidth: 8 },
+              },
+            },
+          },
+        });
+      }
+
+      const relationshipMeta = {
+        notBack: {
+          title: "Not Follow Back",
+          desc: "Akun yang Anda ikuti tetapi tidak mengikuti Anda kembali.",
+        },
+        mutual: {
+          title: "Mutual",
+          desc: "Akun yang saling mengikuti dengan Anda.",
+        },
+        fans: {
+          title: "Only Followers",
+          desc: "Akun yang mengikuti Anda, tetapi belum Anda ikuti kembali.",
+        },
+      };
+
+      function renderRelationshipList() {
+        const search = document
+          .getElementById("relationshipSearch")
+          .value.trim()
+          .toLowerCase();
+        const list = state[relationshipActiveTab] || [];
+        const filtered = list.filter((item) =>
+          item.username.toLowerCase().includes(search),
+        );
+        document.getElementById("relTitle").textContent =
+          relationshipMeta[relationshipActiveTab].title;
+        document.getElementById("relDesc").textContent =
+          relationshipMeta[relationshipActiveTab].desc;
+        renderAccountList(
+          document.getElementById("relationshipList"),
+          filtered,
+          list.length === 0
+            ? "Data belum tersedia. Upload following.json dan followers_*.json untuk analisis relasi."
+            : "Tidak ada username yang cocok.",
+        );
+      }
+
+      function renderSecondaryCards() {
+        const container = document.getElementById("secondaryCards");
+        container.innerHTML = "";
+        const secondaryKeys = Object.keys(FILE_TYPES).filter(
+          (key) => !["following", "followers"].includes(key),
+        );
+
+        secondaryKeys.forEach((key) => {
+          const config = FILE_TYPES[key];
+          const data = state.secondary[key] || [];
+          const tone = toneClasses[config.tone];
+          const loaded = Object.prototype.hasOwnProperty.call(
+            state.secondary,
+            key,
+          );
+          const card = document.createElement("article");
+          card.className =
+            "card-hover rounded-3xl border border-slate-200 bg-white p-5 shadow-sm";
+          card.innerHTML = `
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex h-11 w-11 items-center justify-center rounded-2xl ${tone[0]} text-xl">${config.icon}</div>
+            <span class="rounded-full px-2.5 py-1 text-xs font-bold ${loaded ? `${tone[0]} ${tone[1]}` : "bg-slate-100 text-slate-400"}">${loaded ? `${data.length} akun` : "Belum diupload"}</span>
+          </div>
+          <h3 class="mt-4 font-bold text-slate-900">${config.label}</h3>
+          <p class="mt-2 min-h-[60px] text-sm leading-5 text-slate-500">${config.description}</p>
+          <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
+            <span class="text-xs font-medium text-slate-400">${getExpectedFileName(key)}</span>
+            <button ${loaded ? "" : "disabled"} data-open-secondary="${key}" class="text-sm font-bold ${loaded ? `${tone[1]} hover:underline` : "cursor-not-allowed text-slate-300"}">Lihat data →</button>
+          </div>`;
+          container.appendChild(card);
+        });
+
+        container.querySelectorAll("[data-open-secondary]").forEach((btn) => {
+          btn.addEventListener("click", () =>
+            openSecondaryModal(btn.dataset.openSecondary),
+          );
+        });
+      }
+
+      function getExpectedFileName(key) {
+        const names = {
+          pending_follow_requests: "pending_follow_requests.json",
+          recent_follow_requests: "recent_follow_requests.json",
+          recently_unfollowed_profiles: "recently_unfollowed_profiles.json",
+          hide_story_from: "hide_story_from.json",
+          removed_suggestions: "removed_suggestions.json",
+          approved_business_partners: "approved_business_partners.json",
+        };
+        return names[key] || `${key}.json`;
+      }
+
+      function openSecondaryModal(key) {
+        const config = FILE_TYPES[key];
+        modalDataset = state.secondary[key] || [];
+        document.getElementById("modalIcon").textContent = config.icon;
+        document.getElementById("modalTitle").textContent = config.label;
+        document.getElementById("modalDescription").textContent =
+          config.description;
+        document.getElementById("modalCount").textContent =
+          `${modalDataset.length} akun terdeteksi`;
+        document.getElementById("modalSearch").value = "";
+        renderModalList();
+        const modal = document.getElementById("detailModal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+
+      function renderModalList() {
+        const search = document
+          .getElementById("modalSearch")
+          .value.trim()
+          .toLowerCase();
+        const filtered = modalDataset.filter((item) =>
+          item.username.toLowerCase().includes(search),
+        );
+        renderAccountList(
+          document.getElementById("modalList"),
+          filtered,
+          "Tidak ada username yang cocok.",
+        );
+      }
+
+      function renderAccountList(container, list, emptyText) {
+        container.innerHTML = "";
+        if (!list.length) {
+          container.innerHTML = `<div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">${escapeHtml(emptyText)}</div>`;
+          return;
+        }
+        list.forEach((item) => {
+          const row = document.createElement("div");
+          row.className =
+            "flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-3 transition hover:border-slate-200 hover:bg-white";
+          const dateText = item.timestamp
+            ? formatTimestamp(item.timestamp)
+            : "";
+          row.innerHTML = `
+          <div class="min-w-0">
+            <p class="truncate text-sm font-semibold text-slate-800">@${escapeHtml(item.username)}</p>
+            ${dateText ? `<p class="mt-0.5 text-xs text-slate-400">${dateText}</p>` : ""}
+          </div>
+          <a href="https://instagram.com/${encodeURIComponent(item.username)}" target="_blank" rel="noopener noreferrer" class="shrink-0 rounded-lg bg-white px-3 py-2 text-xs font-bold text-indigo-600 ring-1 ring-slate-200 transition hover:bg-indigo-50">Profil ↗</a>`;
+          container.appendChild(row);
+        });
+      }
+
+      function formatTimestamp(timestamp) {
+        const date = new Date(Number(timestamp) * 1000);
+        return Number.isNaN(date.getTime())
+          ? ""
+          : date.toLocaleString("id-ID", {
+              dateStyle: "medium",
+              timeStyle: "short",
             });
+      }
+
+      function resetState() {
+        state.following = [];
+        state.followers = [];
+        state.notBack = [];
+        state.mutual = [];
+        state.fans = [];
+        state.secondary = {};
+        relationshipActiveTab = "notBack";
+        document.getElementById("relationshipSearch").value = "";
+      }
+
+      function fullReset() {
+        resetState();
+        allFiles.value = "";
+        document.getElementById("fileQueue").classList.add("hidden");
+        document.getElementById("fileQueueGrid").innerHTML = "";
+        document.getElementById("overviewArea").classList.add("hidden");
+        document.getElementById("statusBox").classList.add("hidden");
+        resetBtn.classList.add("hidden");
+        if (chartInstance) {
+          chartInstance.destroy();
+          chartInstance = null;
         }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
 
-        // --- UI Utils: Tabs & Filter ---
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
 
-        function switchTab(tabName) {
-            // Hide all lists
-            ['notBack', 'mutual', 'fans'].forEach(t => {
-                document.getElementById(`list-${t}`).classList.add('hidden');
-                document.getElementById(`list-${t}`).classList.remove('block');
-                
-                // Reset Button Styles
-                const btn = document.getElementById(`tab-${t}`);
-                btn.className = "flex-1 py-4 text-center font-semibold text-gray-500 hover:text-indigo-600";
-            });
+      allFiles.addEventListener("change", (e) =>
+        processSelectedFiles(e.target.files),
+      );
+      resetBtn.addEventListener("click", fullReset);
+      document
+        .getElementById("relationshipSearch")
+        .addEventListener("input", renderRelationshipList);
+      document
+        .getElementById("modalSearch")
+        .addEventListener("input", renderModalList);
 
-            // Show selected list
-            document.getElementById(`list-${tabName}`).classList.remove('hidden');
-            document.getElementById(`list-${tabName}`).classList.add('block');
+      document.querySelectorAll(".rel-tab").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          relationshipActiveTab = btn.dataset.relTab;
+          document.querySelectorAll(".rel-tab").forEach((tab) => {
+            tab.className =
+              "rel-tab whitespace-nowrap rounded-t-xl border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-slate-500";
+          });
+          const activeStyle =
+            relationshipActiveTab === "notBack"
+              ? "border-rose-500 bg-rose-50 text-rose-600"
+              : relationshipActiveTab === "mutual"
+                ? "border-emerald-500 bg-emerald-50 text-emerald-600"
+                : "border-blue-500 bg-blue-50 text-blue-600";
+          btn.className = `rel-tab whitespace-nowrap rounded-t-xl border-b-2 px-4 py-3 text-sm font-bold ${activeStyle}`;
+          renderRelationshipList();
+        });
+      });
 
-            // Highlight selected button
-            const activeBtn = document.getElementById(`tab-${tabName}`);
-            let activeColor = "border-red-600 text-red-600 bg-red-50";
-            if (tabName === 'mutual') activeColor = "border-green-600 text-green-600 bg-green-50";
-            if (tabName === 'fans') activeColor = "border-blue-600 text-blue-600 bg-blue-50";
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropZone.classList.add("drop-active");
+        });
+      });
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropZone.classList.remove("drop-active");
+        });
+      });
+      dropZone.addEventListener("drop", (e) => {
+        const files = [...e.dataTransfer.files].filter((file) =>
+          file.name.toLowerCase().endsWith(".json"),
+        );
+        processSelectedFiles(files);
+      });
 
-            activeBtn.className = `flex-1 py-4 text-center font-semibold border-b-2 ${activeColor}`;
-        }
+      document
+        .getElementById("closeModalBtn")
+        .addEventListener("click", closeModal);
+      document.getElementById("detailModal").addEventListener("click", (e) => {
+        if (e.target.id === "detailModal") closeModal();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeModal();
+      });
 
-        function filterList(ulId, searchTerm) {
-            const filter = searchTerm.toLowerCase();
-            const ul = document.getElementById(ulId);
-            const lis = ul.getElementsByTagName('li');
-
-            for (let i = 0; i < lis.length; i++) {
-                const span = lis[i].getElementsByTagName("span")[0];
-                if (span) {
-                    const txtValue = span.textContent || span.innerText;
-                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                        lis[i].style.display = "";
-                    } else {
-                        lis[i].style.display = "none";
-                    }
-                }
-            }
-        }
+      function closeModal() {
+        const modal = document.getElementById("detailModal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
     </script>
-</body>
+  </body>
 </html>
