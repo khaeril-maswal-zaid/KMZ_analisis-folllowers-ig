@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IG Unfollow Detector (Local & Secure)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .card { transition: all 0.3s ease; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .list-container { max-height: 400px; overflow-y: auto; }
+        /* Scrollbar custom */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-indigo-600 mb-2">🕵️‍♂️ IG Unfollow Detector</h1>
+            <p class="text-gray-500">Analisis pengikut Instagram Anda secara aman. Data diproses di browser Anda.</p>
+        </header>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="border-2 border-dashed border-indigo-200 rounded-lg p-6 text-center hover:bg-indigo-50 transition">
+                    <label class="block mb-2 font-semibold text-indigo-700">1. Upload following.json</label>
+                    <input type="file" id="followingFile" accept=".json" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 cursor-pointer">
+                    <p class="text-xs text-gray-400 mt-2">File ini berisi daftar orang yang Anda ikuti.</p>
+                </div>
+
+                <div class="border-2 border-dashed border-green-200 rounded-lg p-6 text-center hover:bg-green-50 transition">
+                    <label class="block mb-2 font-semibold text-green-700">2. Upload followers_*.json</label>
+                    <input type="file" id="followersFiles" accept=".json" multiple class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-100 file:text-green-700 hover:file:bg-green-200 cursor-pointer">
+                    <p class="text-xs text-gray-400 mt-2">Bisa pilih banyak file sekaligus (jika followers > 1 file).</p>
+                </div>
+            </div>
+
+            <button onclick="processFiles()" class="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow transition transform active:scale-95">
+                🔍 Analisis Sekarang
+            </button>
+            <p id="statusMsg" class="text-center text-sm mt-3 text-red-500 font-semibold"></p>
+        </div>
+
+        <div id="resultsArea" class="hidden">
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white p-4 rounded-lg shadow text-center border-b-4 border-gray-400">
+                    <h3 class="text-gray-500 text-sm uppercase">Total Following</h3>
+                    <p class="text-2xl font-bold" id="statFollowing">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow text-center border-b-4 border-gray-400">
+                    <h3 class="text-gray-500 text-sm uppercase">Total Followers</h3>
+                    <p class="text-2xl font-bold" id="statFollowers">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow text-center border-b-4 border-red-500">
+                    <h3 class="text-red-500 text-sm uppercase font-bold">Not Follow Back</h3>
+                    <p class="text-2xl font-bold text-red-600" id="statNotBack">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow text-center border-b-4 border-green-500">
+                    <h3 class="text-green-500 text-sm uppercase font-bold">Mutual</h3>
+                    <p class="text-2xl font-bold text-green-600" id="statMutual">0</p>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg flex flex-col items-center justify-center">
+                    <h3 class="font-bold text-lg mb-4 text-gray-700">Ringkasan Statistik</h3>
+                    <div class="w-full relative" style="height: 300px;">
+                        <canvas id="myChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="flex border-b">
+                        <button onclick="switchTab('notBack')" id="tab-notBack" class="flex-1 py-4 text-center font-semibold text-red-600 border-b-2 border-red-600 bg-red-50">
+                            💔 Not Follow Back
+                        </button>
+                        <button onclick="switchTab('mutual')" id="tab-mutual" class="flex-1 py-4 text-center font-semibold text-gray-500 hover:text-green-600">
+                            🤝 Mutual
+                        </button>
+                        <button onclick="switchTab('fans')" id="tab-fans" class="flex-1 py-4 text-center font-semibold text-gray-500 hover:text-blue-600">
+                            🌟 Only Followers
+                        </button>
+                    </div>
+
+                    <div class="p-4">
+                        <div id="list-notBack" class="block">
+                            <input type="text" onkeyup="filterList('ul-notBack', this.value)" placeholder="Cari username..." class="w-full mb-3 p-2 border rounded text-sm bg-gray-50">
+                            <ul id="ul-notBack" class="list-container space-y-2"></ul>
+                        </div>
+
+                        <div id="list-mutual" class="hidden">
+                            <input type="text" onkeyup="filterList('ul-mutual', this.value)" placeholder="Cari username..." class="w-full mb-3 p-2 border rounded text-sm bg-gray-50">
+                            <ul id="ul-mutual" class="list-container space-y-2"></ul>
+                        </div>
+
+                        <div id="list-fans" class="hidden">
+                            <input type="text" onkeyup="filterList('ul-fans', this.value)" placeholder="Cari username..." class="w-full mb-3 p-2 border rounded text-sm bg-gray-50">
+                            <ul id="ul-fans" class="list-container space-y-2"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartInstance = null;
+
+        // Helper: Read File as Text
+        const readFile = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(JSON.parse(e.target.result));
+                reader.onerror = (e) => reject(e);
+                reader.readAsText(file);
+            });
+        };
+
+        // Helper: Extract username safely
+        // Menggunakan value dari string_list_data sebagai primary, title sebagai fallback
+        const extractUsernames = (jsonArray) => {
+            const usernames = new Set();
+            
+            // Handle struktur 'relationships_following' (biasanya di following.json)
+            if (jsonArray.relationships_following) {
+                jsonArray = jsonArray.relationships_following;
+            }
+
+            // Normalisasi ke array jika root-nya bukan array
+            if (!Array.isArray(jsonArray)) {
+                // Jika formatnya { users: [...] } atau semacamnya, perlu penyesuaian.
+                // Untuk format IG standar saat ini, biasanya array langsung atau properti di atas.
+                return usernames; 
+            }
+
+            jsonArray.forEach(item => {
+                let username = null;
+                
+                // Cara 1: Ambil dari string_list_data[0].value (Paling Akurat - ID Unik)
+                if (item.string_list_data && item.string_list_data.length > 0) {
+                    username = item.string_list_data[0].value;
+                }
+                
+                // Cara 2: Fallback ke title (Sesuai request, tapi title kadang berisi teks display)
+                if (!username && item.title) {
+                    username = item.title;
+                }
+
+                if (username) {
+                    usernames.add(username);
+                }
+            });
+            return usernames;
+        };
+
+        async function processFiles() {
+            const followingInput = document.getElementById('followingFile');
+            const followersInput = document.getElementById('followersFiles');
+            const statusMsg = document.getElementById('statusMsg');
+
+            // Reset UI
+            statusMsg.textContent = "";
+            
+            if (followingInput.files.length === 0 || followersInput.files.length === 0) {
+                statusMsg.textContent = "❌ Harap upload kedua jenis file (following & followers).";
+                return;
+            }
+
+            try {
+                // 1. Parse Following
+                const followingData = await readFile(followingInput.files[0]);
+                const followingSet = extractUsernames(followingData);
+
+                // 2. Parse Followers (Multiple Files)
+                const followersSet = new Set();
+                for (const file of followersInput.files) {
+                    const data = await readFile(file);
+                    const extracted = extractUsernames(data);
+                    extracted.forEach(u => followersSet.add(u));
+                }
+
+                if (followingSet.size === 0 || followersSet.size === 0) {
+                    statusMsg.textContent = "⚠️ Data kosong atau format JSON tidak dikenali. Pastikan file dari 'Download Your Information' Instagram.";
+                    return;
+                }
+
+                // 3. Logika Perbandingan
+                const mutual = [];
+                const notBack = [];
+                const fans = [];
+
+                // Cek Not Back & Mutual
+                followingSet.forEach(user => {
+                    if (followersSet.has(user)) {
+                        mutual.push(user);
+                    } else {
+                        notBack.push(user);
+                    }
+                });
+
+                // Cek Fans (Only Followers)
+                followersSet.forEach(user => {
+                    if (!followingSet.has(user)) {
+                        fans.push(user);
+                    }
+                });
+
+                // 4. Update UI
+                renderResults(followingSet.size, followersSet.size, notBack, mutual, fans);
+                
+            } catch (error) {
+                console.error(error);
+                statusMsg.textContent = "❌ Terjadi kesalahan saat membaca file JSON. Pastikan format file benar.";
+            }
+        }
+
+        function renderResults(totalFollowing, totalFollowers, notBackList, mutualList, fansList) {
+            document.getElementById('resultsArea').classList.remove('hidden');
+
+            // Set Stats Text
+            document.getElementById('statFollowing').innerText = totalFollowing;
+            document.getElementById('statFollowers').innerText = totalFollowers;
+            document.getElementById('statNotBack').innerText = notBackList.length;
+            document.getElementById('statMutual').innerText = mutualList.length;
+
+            // Render Charts
+            renderChart(notBackList.length, mutualList.length, fansList.length);
+
+            // Populate Lists
+            populateList('ul-notBack', notBackList, 'text-red-600');
+            populateList('ul-mutual', mutualList, 'text-green-600');
+            populateList('ul-fans', fansList, 'text-blue-600');
+
+            // Scroll to results
+            document.getElementById('resultsArea').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function populateList(elementId, dataList, colorClass) {
+            const ul = document.getElementById(elementId);
+            ul.innerHTML = '';
+            
+            if (dataList.length === 0) {
+                ul.innerHTML = '<li class="p-2 text-gray-400 text-center text-sm">Tidak ada data</li>';
+                return;
+            }
+
+            dataList.forEach(user => {
+                const li = document.createElement('li');
+                li.className = "flex justify-between items-center bg-gray-50 p-3 rounded border border-gray-100 hover:bg-white hover:shadow-sm transition";
+                li.innerHTML = `
+                    <span class="font-medium text-gray-700 select-all">${user}</span>
+                    <a href="https://instagram.com/${user}" target="_blank" class="text-xs font-bold ${colorClass} hover:underline">
+                        Lihat Profil ↗
+                    </a>
+                `;
+                ul.appendChild(li);
+            });
+        }
+
+        function renderChart(notBackCount, mutualCount, fansCount) {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Not Follow Back', 'Mutual', 'Only Followers'],
+                    datasets: [{
+                        data: [notBackCount, mutualCount, fansCount],
+                        backgroundColor: [
+                            '#EF4444', // Red for Not Back
+                            '#10B981', // Green for Mutual
+                            '#3B82F6'  // Blue for Fans
+                        ],
+                        borderWidth: 2,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { usePointStyle: true, padding: 20 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- UI Utils: Tabs & Filter ---
+
+        function switchTab(tabName) {
+            // Hide all lists
+            ['notBack', 'mutual', 'fans'].forEach(t => {
+                document.getElementById(`list-${t}`).classList.add('hidden');
+                document.getElementById(`list-${t}`).classList.remove('block');
+                
+                // Reset Button Styles
+                const btn = document.getElementById(`tab-${t}`);
+                btn.className = "flex-1 py-4 text-center font-semibold text-gray-500 hover:text-indigo-600";
+            });
+
+            // Show selected list
+            document.getElementById(`list-${tabName}`).classList.remove('hidden');
+            document.getElementById(`list-${tabName}`).classList.add('block');
+
+            // Highlight selected button
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            let activeColor = "border-red-600 text-red-600 bg-red-50";
+            if (tabName === 'mutual') activeColor = "border-green-600 text-green-600 bg-green-50";
+            if (tabName === 'fans') activeColor = "border-blue-600 text-blue-600 bg-blue-50";
+
+            activeBtn.className = `flex-1 py-4 text-center font-semibold border-b-2 ${activeColor}`;
+        }
+
+        function filterList(ulId, searchTerm) {
+            const filter = searchTerm.toLowerCase();
+            const ul = document.getElementById(ulId);
+            const lis = ul.getElementsByTagName('li');
+
+            for (let i = 0; i < lis.length; i++) {
+                const span = lis[i].getElementsByTagName("span")[0];
+                if (span) {
+                    const txtValue = span.textContent || span.innerText;
+                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                        lis[i].style.display = "";
+                    } else {
+                        lis[i].style.display = "none";
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
